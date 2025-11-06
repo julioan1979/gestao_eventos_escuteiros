@@ -1,0 +1,14 @@
+body {
+    font-family: "Inter", sans-serif;
+}
+
+.block-container {
+    padding-top: 2rem;
+    padding-bottom: 2rem;
+}
+
+.stMetric {
+    background-color: #f6f9fc;
+    padding: 1rem;
+    border-radius: 0.75rem;
+}
