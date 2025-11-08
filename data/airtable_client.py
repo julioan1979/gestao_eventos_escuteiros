@@ -1,18 +1,39 @@
 """Helpers for interacting with Airtable tables used in the project."""
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional
+from functools import lru_cache
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 from pyairtable import Table
 import streamlit as st
 
-API_KEY = st.secrets["airtable"]["api_key"]
-BASE_ID = st.secrets["airtable"]["base_id"]
+
+@lru_cache(maxsize=1)
+def _get_airtable_credentials() -> Tuple[str, str]:
+    """Return the Airtable API credentials declared in ``st.secrets``."""
+
+    try:
+        airtable_config = st.secrets["airtable"]
+    except Exception as error:  # pragma: no cover - runtime configuration guard
+        raise RuntimeError(
+            "Configuração Airtable não encontrada em st.secrets['airtable']."
+        ) from error
+
+    try:
+        api_key = airtable_config["api_key"]
+        base_id = airtable_config["base_id"]
+    except KeyError as error:  # pragma: no cover - runtime configuration guard
+        raise RuntimeError(
+            "Configuração Airtable deve incluir as chaves 'api_key' e 'base_id'."
+        ) from error
+
+    return str(api_key), str(base_id)
 
 
 def get_table(name: str) -> Table:
     """Return a :class:`~pyairtable.Table` instance for ``name``."""
-    return Table(API_KEY, BASE_ID, name)
+    api_key, base_id = _get_airtable_credentials()
+    return Table(api_key, base_id, name)
 
 
 def _normalize(records: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
