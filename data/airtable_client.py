@@ -1,6 +1,8 @@
 """Helpers for interacting with Airtable tables used in the project."""
 from __future__ import annotations
 
+import os
+from collections.abc import Mapping
 from functools import lru_cache
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
@@ -12,20 +14,28 @@ import streamlit as st
 def _get_airtable_credentials() -> Tuple[str, str]:
     """Return the Airtable API credentials declared in ``st.secrets``."""
 
+    airtable_config: Mapping[str, Any] | None = None
     try:
         airtable_config = st.secrets["airtable"]
-    except Exception as error:  # pragma: no cover - runtime configuration guard
-        raise RuntimeError(
-            "Configuração Airtable não encontrada em st.secrets['airtable']."
-        ) from error
+    except Exception:  # pragma: no cover - runtime configuration guard
+        airtable_config = None
 
-    try:
-        api_key = airtable_config["api_key"]
-        base_id = airtable_config["base_id"]
-    except KeyError as error:  # pragma: no cover - runtime configuration guard
+    api_key: Optional[str] = None
+    base_id: Optional[str] = None
+
+    if isinstance(airtable_config, Mapping):
+        api_key = airtable_config.get("api_key")
+        base_id = airtable_config.get("base_id")
+
+    api_key = os.getenv("AIRTABLE_API_KEY", api_key or "") or None
+    base_id = os.getenv("AIRTABLE_BASE_ID", base_id or "") or None
+
+    if not api_key or not base_id:  # pragma: no cover - runtime configuration guard
         raise RuntimeError(
-            "Configuração Airtable deve incluir as chaves 'api_key' e 'base_id'."
-        ) from error
+            "Credenciais Airtable em falta. Configure st.secrets['airtable'] com"
+            " 'api_key' e 'base_id' ou defina as variáveis de ambiente"
+            " AIRTABLE_API_KEY e AIRTABLE_BASE_ID."
+        )
 
     return str(api_key), str(base_id)
 
